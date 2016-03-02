@@ -6,7 +6,7 @@
 % allSpikes
 % IntracellularData
 % potentially_not_auditory
-
+kwik2mat_KP
 %%
 addpath('/Users/kperks/mnt/cube/Ice/kperks/MatFunctions/');
 %% set default plot params
