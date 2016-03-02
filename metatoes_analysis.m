@@ -51,8 +51,10 @@ stimfs = 40000;
 stimdur = (metatoes{isite}.stims{istim}.stim_end_times(1)/fs)-(metatoes{isite}.stims{istim}.stim_start_times(1)/fs);
 stimstart = min(find(xtime_spikes >0));
 stimstop = min(find(xtime_spikes >stimdur));
-allSpikes_prestim = allSpikes(:,:,:,1:stimstart-1);
-allSpikes_peristim = allSpikes(:,:,:,stimstart:stimstop);
+
+% 
+% allSpikes_prestim = allSpikes(:,:,:,1:stimstart-1);
+% allSpikes_peristim = allSpikes(:,:,:,stimstart:stimstop);
 
 %% which clusters are auditory?
 isauditory = nan(size(allSpikes,1),size(allSpikes,2));
