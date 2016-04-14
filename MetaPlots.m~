@@ -6,7 +6,7 @@ set(0,'DefaultTextFontName','Helvetica')
 set(0,'DefaultFigureColor','w')
 set(0,'DefaultAxesColorOrder',[0 0 0;1 0 1;0 1 1; 0 1 0])
 %%
-kwik2mat_KP
+% kwik2mat_KP
 sortID = 2;
 fs = toedata{1}.fs;
 nstims = size(metatoes{1}.stims,1);

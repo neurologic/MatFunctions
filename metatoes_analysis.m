@@ -6,7 +6,9 @@
 % allSpikes
 % IntracellularData
 % potentially_not_auditory
+
 kwik2mat_KP
+
 %%
 addpath('/Users/kperks/mnt/cube/Ice/kperks/MatFunctions/');
 %% set default plot params
@@ -45,52 +47,52 @@ xtime_spikes = linspace(trial_edges(1),trial_edges(2),trialnsamps);
 allSpikes = SpikeMat_filtered(metatoes,type,trial_edges,trialnsamps);
 % allSpikes is a cell array of function handles to pass xtime_spikes to for
 % individual trials to build sub-matrices to analyze
-%% separate allSpikes into prestim and peristim to send to brad
+
 fs = 31250;
 stimfs = 40000;
-stimdur = (metatoes{isite}.stims{istim}.stim_end_times(1)/fs)-(metatoes{isite}.stims{istim}.stim_start_times(1)/fs);
+stimdur = (metatoes{1}.stims{1}.stim_end_times(1)/fs)-(metatoes{1}.stims{1}.stim_start_times(1)/fs);
 stimstart = min(find(xtime_spikes >0));
 stimstop = min(find(xtime_spikes >stimdur));
 
+clear metatoes
 % 
 % allSpikes_prestim = allSpikes(:,:,:,1:stimstart-1);
 % allSpikes_peristim = allSpikes(:,:,:,stimstart:stimstop);
 
+%% on lintu 
+%which clusters are auditory?
+% isauditory = nan(size(allSpikes,1),size(allSpikes,2));
+% for icluster = 1:size(metatoes,1)
+%     parfor istim = 1:size(metatoes{1}.stims,1)
+%         
+%         fs = 31250;
+%         stimfs = 40000;
+%         
+%         ntrials = size(allSpikes,3);
+%         this_cluster_stim_response = zeros(ntrials,trialnsamps);
+%         for itrial = 1:ntrials
+%             this_cluster_stim_fun = allSpikes{icluster,istim,itrial};
+%             if ~isempty(this_cluster_stim_fun);
+%                 this_cluster_stim_response(itrial,:) = this_cluster_stim_fun(xtime_spikes);
+%             end
+%         end
+%         trial_avg = nanmean(this_cluster_stim_response,1);
+%         
+%         prestim = trial_avg(1:stimstart-1);
+%         peristim = trial_avg(stimstart:stimstop);
+%         
+%         [p,h,stats] = ranksum(prestim,peristim);
+%         % a "1" rejects the null that the prestim and peristim are from
+%         % continuous distributions with equal medians
+%         isauditory(icluster,istim) = h;
+%     end
+%     icluster
+% end
 %% which clusters are auditory?
-isauditory = nan(size(allSpikes,1),size(allSpikes,2));
-for isite = 1:size(metatoes,1)
-    parfor istim = 1:size(metatoes{1}.stims,1)
-        
-        fs = 31250;
-        stimfs = 40000;
-        stimdur = (metatoes{isite}.stims{istim}.stim_end_times(1)/fs)-(metatoes{isite}.stims{istim}.stim_start_times(1)/fs);
+isauditory = load('WorkingData/isauditory.mat');
+isauditory = isauditory.isauditory;
 
-        stimstart = min(find(xtime_spikes >0));
-        stimstop = min(find(xtime_spikes >stimdur));
-        
-        
-        ntrials = size(allSpikes,3);
-        this_cluster_stim_response = zeros(ntrials,trialnsamps);
-        for itrial = 1:ntrials
-            this_cluster_stim_fun = allSpikes{isite,istim,itrial};
-            if ~isempty(this_cluster_stim_fun);
-                this_cluster_stim_response(itrial,:) = this_cluster_stim_fun(xtime_spikes);
-            end
-        end
-        trial_avg = nanmean(this_cluster_stim_response,1);
-        
-        prestim = trial_avg(1:stimstart-1);
-        peristim = trial_avg(stimstart:stimstop);
-        
-        [p,h,stats] = ranksum(prestim,peristim);
-        % a "1" rejects the null that the prestim and peristim are from
-        % continuous distributions with equal medians
-        isauditory(isite,istim) = h;
-    end
-    isite
-end
-
-percent_driving_stims = 100*(sum(isauditory,2) ./ size(metatoes{1}.stims,1));
+percent_driving_stims = 100*(sum(isauditory,2) ./ size(allSpikes,2));
 potentially_not_auditory = find(percent_driving_stims < 25)
 
 %% relationship between mean signal correlation and primary recording site location
@@ -100,35 +102,32 @@ cluster_distance = [];
 
 fs = 31250;
 stimfs = 40000;
-stimdur = (metatoes{1}.stims{1}.stim_end_times(1)/fs)-(metatoes{1}.stims{1}.stim_start_times(1)/fs);
 
-stimstart = min(find(xtime_spikes >0));
-stimstop = min(find(xtime_spikes >stimdur));
 
 for istim = 1:size(metatoes{1}.stims,1)
-    for isite1 = 1:size(metatoes,1)
+    for icluster1 = 1:size(metatoes,1)
         
-        this_cluster_stim = allSpikes(isite1,istim,:,:);
+        this_cluster_stim = allSpikes(icluster1,istim,:,:);
         trial_avg_1 = squeeze(nanmean(this_cluster_stim,3));
         prestim_1 = trial_avg_1(1:stimstart-1);
         peristim_1 = trial_avg_1(stimstart:stimstop);
         
-        for isite2 = 1:size(metatoes,1)
+        for icluster2 = 1:size(metatoes,1)
             
-            this_cluster_stim = allSpikes(isite2,istim,:,:);
+            this_cluster_stim = allSpikes(icluster2,istim,:,:);
             trial_avg_2 = squeeze(nanmean(this_cluster_stim,3));
             prestim_2 = trial_avg_2(1:stimstart-1);
             peristim_2 = trial_avg_2(stimstart:stimstop);
             
-            cluster_distance(isite1,isite2) = abs(allchanz(isite1) - allchanz(isite2));
+            cluster_distance(icluster1,icluster2) = abs(allchanz(icluster1) - allchanz(icluster2));
 
             c = corrcoef(prestim_1,prestim_2);
             c = c(1,2);
-            prestim_c(isite1,isite2,istim) = c;
+            prestim_c(icluster1,icluster2,istim) = c;
             
             c = corrcoef(peristim_1,peristim_2);
             c = c(1,2);
-            peristim_c(isite1,isite2,istim) = c;
+            peristim_c(icluster1,icluster2,istim) = c;
         end
     end
 end
@@ -137,49 +136,49 @@ mean_peristim_c = squeeze(nanmean(peristim_c,3));
 mean_prestim_c = squeeze(nanmean(prestim_c,3));
 a = ones(size(metatoes,1),size(metatoes,1));
 inds = ~triu(a);
+
 figure;
 scatter(mean_peristim_c(inds),cluster_distance(inds))
 xlabel('mean signal correlation (during stimulus)')
-ylabel('primary site distance')
+ylabel('primary cluster distance')
 set(gca,'XLim',[-0.4,1])
 text(0.4,1000,['n = ' num2str(size(metatoes,1)) ' clusters'])
 
 figure;
 scatter(mean_prestim_c(inds),cluster_distance(inds))
 xlabel('mean signal correlation (during pre-stimulus silence)')
-ylabel('primary site distance')
+ylabel('primary cluster distance')
 set(gca,'XLim',[-0.4,1])
 text(0.4,1600,['n = ' num2str(size(metatoes,1)) ' clusters'])
 
-%% spiking population stimulus response trial-averaged
-prestim_dist_spiking = [];
-peristim_dist_spiking = [];
-
-n_prestim_spikes = [];
-n_peristim_spikes = [];
-
-siteref = 1;
-for istim = 1:size(metatoes{1}.stims,1)
-    fs = 31250;
-    stimfs = 40000;
-    stimdur = (metatoes{siteref}.stims{istim}.stim_end_times(1)/fs)-(metatoes{siteref}.stims{istim}.stim_start_times(1)/fs);
-    
-    stimstart = min(find(xtime_spikes >0));
-    stimstop = min(find(xtime_spikes >stimdur));
-    
-    
-    this_clusters_stims = allSpikes(:,istim,:,:);
-    trial_avg = nanmean(this_clusters_stims,3);
-    cluster_avg = squeeze(sum(trial_avg,1));
-    cluster_avg = cluster_avg ./ max(cluster_avg);
-    
-    prestim_dist_spiking(istim,:) = cluster_avg(1:stimstart-1);
-    peristim_dist_spiking(istim,:) = cluster_avg(stimstart:stimstop);
-    
-
-end
 
 %% distribution spiking population stimulus response trial-averaged
+% from processing done on lintu
+this_stim_response = load('WorkingData/this_stim_response.mat');
+this_stim_response = this_stim_response.this_stim_response;
+
+prestim_dist_spiking = [];
+peristim_dist_spiking = [];
+prestim_skew = [];
+prestim_var = [];
+peristim_skew = [];
+peristim_var = [];
+
+for istim = 1:size(this_stim_response,1);
+    pop_response = this_stim_response(istim,:);
+    pop_response = pop_response - min(pop_response);
+    pop_response = pop_response./(max(pop_response));
+    
+    prestim_dist_spiking(istim,:) = pop_response(1:stimstart-1);
+    prestim_skew(istim,:) = skewness(pop_response(1:stimstart-1));
+    prestim_var(istim,:) = var(pop_response(1:stimstart-1));
+    prestim_mean(istim,:) = mean(pop_response(1:stimstart-1));
+    
+    peristim_dist_spiking(istim,:) = pop_response(stimstart:stimstop);
+    peristim_skew(istim,:) = skewness(pop_response(stimstart:stimstop));
+    peristim_var(istim,:) = var(pop_response(stimstart:stimstop));
+    peristim_mean(istim,:) = mean(pop_response(stimstart:stimstop));
+end
 
 edges = [-1:0.05:1];
 n_prestim_spikes = histc(prestim_dist_spiking,edges,1)./size(prestim_dist_spiking,2);
@@ -192,13 +191,160 @@ stairs(edges, mean(n_prestim_spikes,2),'color','k','LineWidth',4)
 yhist_peri_spikes = mean(n_peristim_spikes,2);
 yhist_pre_spikes = mean(n_prestim_spikes,2);
 
+hfig = figure;
+scatter(prestim_skew, peristim_skew, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus skewness spiking dist')
+ylabel('peri-stim skewness spiking dist')
+
+hfig = figure;
+scatter(prestim_var, peristim_var, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus variance spiking dist')
+ylabel('peri-stim variance spiking dist')
+
+hfig = figure;
+scatter(prestim_mean, peristim_mean, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus mean spiking dist')
+ylabel('peri-stim mean spiking dist')
+
+clear this_stim_response
+%% distribution spiking population stimulus response single trials
+% from processing done on lintu
+this_trial_response = load('WorkingData/this_trial_response.mat');
+this_trial_response = this_trial_response.this_trial_response;
+
+prestim_dist_spiking = [];
+peristim_dist_spiking = [];
+prestim_skew = [];
+prestim_var = [];
+peristim_skew = [];
+peristim_var = [];
+
+for istim = 1:size(this_trial_response,1);
+    for itrial = 1:size(this_trial_response,2);
+        pop_response = squeeze(this_trial_response(istim,itrial,:));
+
+        pop_response = pop_response - min(pop_response);
+        pop_response = pop_response./(max(pop_response));
+        
+        prestim_response = pop_response(:,1:stimstart-1);
+        prestim_dist_spiking(istim,:) = prestim_response(:);
+        prestim_skew(istim,:) = skewness(prestim_response(:));
+        prestim_var(istim,:) = var(prestim_response(:));
+        prestim_mean(istim,:) = mean(prestim_response(:));
+        
+        peristim_response = pop_response(:,stimstart:stimstop);
+        peristim_dist_spiking(istim,:) = peristim_response(:);
+        peristim_skew(istim,:) = skewness(peristim_response(:));
+        peristim_var(istim,:) = var(peristim_response(:));
+        peristim_mean(istim,:) = mean(peristim_response(:));
+    end
+end
+
+edges = [-1:0.05:1];
+n_prestim_spikes = histc(prestim_dist_spiking,edges,1)./size(prestim_dist_spiking,2);
+n_peristim_spikes = histc(peristim_dist_spiking,edges,1)./size(prestim_dist_spiking,2);
+figure;
+hold on
+stairs(edges, mean(n_peristim_spikes,2),'color','r','LineWidth',4)
+stairs(edges, mean(n_prestim_spikes,2),'color','k','LineWidth',4)
+
+hfig = figure;
+scatter(prestim_skew, peristim_skew, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus skewness spiking dist')
+ylabel('peri-stim skewness spiking dist')
+
+hfig = figure;
+scatter(prestim_var, peristim_var, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus variance spiking dist')
+ylabel('peri-stim variance spiking dist')
+
+hfig = figure;
+scatter(prestim_mean, peristim_mean, 100,'k','fill')
+SetAxisUnity(hfig)
+xlabel('pre-stimulus mean spiking dist')
+ylabel('peri-stim mean spiking dist')
+
+clear this_trial_response
+
+%% spiking population stimulus response per trial
+
+
+
+for isite = 1:nsite_E
+    clusterinds = find(allsiteID == siteID_E(isite));
+
+    this_trial_response = zeros(nstim,ntrials,trialnsamps);
+    
+    for istim = 1:nstim
+        fs = 31250;
+        stimfs = 40000;
+        stimdur = (metatoes{clusterref}.stims{istim}.stim_end_times(1)/fs)-(metatoes{clusterref}.stims{istim}.stim_start_times(1)/fs);
+        
+        for itrial = 1:ntrials
+            
+            this_cluster_response = zeros(size(clusterinds,2),trialnsamps);
+            for icluster = 1:size(clusterinds,2)
+                this_cluster_stim_fun = allSpikes{clusterinds(icluster),istim,itrial};
+                if ~isempty(this_cluster_stim_fun);
+                    this_cluster_response(icluster,:) = this_cluster_stim_fun(xtime_spikes);
+                end
+            end
+            trial_avg = sum(this_cluster_response,1);
+            this_trial_response(istim,itrial,:) = trial_avg;
+        end
+        
+    end
+    
+    save(['WorkingData/this_trial_response_site' num2str(isite) '.mat'],'this_trial_response')
+end
 %% CUBICm estimation on extracellular net population response
 istim = 1;
-S = n_peristim_spikes(istim,:);
+S = peristim_dist_spiking(istim,:);
 
 tau = 10; %msec
 % dt_spk = diff(trial_edges)/trialnsamps;
 xihat = CuBICm(S,exptdt,{'exponential',1,tau/1000});
+
+
+% %% spiking population stimulus response per trial
+% prestim_dist_spiking = [];
+% peristim_dist_spiking = [];
+% 
+% n_prestim_spikes = [];
+% n_peristim_spikes = [];
+% 
+% nstim = size(allSpikes,2);
+% clusterref = 1;
+% for istim = 1:nstim
+%     fs = 31250;
+%     stimfs = 40000;
+%     stimdur = (metatoes{clusterref}.stims{istim}.stim_end_times(1)/fs)-(metatoes{clusterref}.stims{istim}.stim_start_times(1)/fs);
+%     
+%     
+%     ntrials = size(allSpikes,3);
+%     this_trial_response = zeros(ntrials,trialnsamps);
+%     for itrial = 1:ntrials
+%         
+%         ncluster = size(allSpikes,1);
+%         this_cluster_response = zeros(ncluster,trialnsamps);
+%         for icluster = 1:ncluster
+%             this_cluster_stim_fun = allSpikes{icluster,istim,itrial};
+%             if ~isempty(this_cluster_stim_fun);
+%                 this_cluster_response(icluster,:) = this_cluster_stim_fun(xtime_spikes);
+%             end
+%         end
+%         trial_avg = sum(this_cluster_response,1);
+%         this_trial_response(istim,trial,:) = trial_avg;
+%     end
+%    
+% end
+% 
+% save('WorkingData/this_trial_response.mat','this_trial_response')
 %% distribution intracellular stimulus response trial-averaged
 prestim_dist_vm = [];
 peristim_dist_vm = [];
@@ -308,11 +454,11 @@ for istim = 1:size(metatoes{1}.stims,1)
     hold on
     
     xtime = linspace(-2,8.5,nsamps);
-    for isite = 1:size(include_inds,1)
+    for icluster = 1:size(include_inds,1)
         
-        dcoff = allchanz(include_inds(isite));
+        dcoff = allchanz(include_inds(icluster));
         
-        meanpsth = mean(squeeze(scaled_Spikes(include_inds(isite),istim,:,:))) + dcoff;
+        meanpsth = mean(squeeze(scaled_Spikes(include_inds(icluster),istim,:,:))) + dcoff;
         
         line(xtime,meanpsth')
         
@@ -367,103 +513,8 @@ figure;
 line(edges,distributions')
 
 title(['only cluster' num2str(sort_ind)]);
-%% for each site (so simultaneous data only) population spiking magnitude distribution (trial averaged and residuals on individual trials)
 
-% use toedata3 as example first
-this_toe = toedata4;
 
-toedata_singleSite_psth = [];
-spike_stimorder_SingleSite = [];
-
-tau = 0.01;
-nsamps =1000;
-
-for isite = 1:size(this_toe,1)
-    sortclass_singleSite(isite) = this_toe{isite}.sort_class;
-    thissite = this_toe{isite};
-    
-    
-    for istim = 1:size(this_toe{isite}.stims,1);
-        thisstim = thissite.stims{istim};
-        spike_stimorder_SingleSite{istim} = thisstim.name{:};
-        for itrial = 1:thisstim.ntrials
-            
-            thisstim_toes = thisstim.toes;
-            
-            thistrial_toes = thisstim_toes{itrial};
-            
-            filteredspikes = zeros(1,nsamps);
-            
-            if ~isempty(thistrial_toes)
-                fun = filtered_response_synaptic(thistrial_toes, tau);
-                filteredspikes = fun(linspace(-2,8.5,nsamps));
-            end
-            
-            toedata_singleSite_psth(isite,istim,itrial,:) = filteredspikes;
-        end
-    end
-end
-
-a = cell2mat(spike_stimorder_SingleSite');
-spike_stimorder = a(:,1)';
-%% toedata3 trial-avg distributions
-include_inds = find(sortclass_singleSite);
-% include_inds = find(allsortclass == 3);
-
-meanpsth_across_clusters = [];
-for istim = 1:16
-    meanpsth_across_trials = squeeze(mean(toedata_singleSite_psth(include_inds,istim,:,stim_onset_ind:stim_offset_ind),3));
-    meanpsth_across_clusters(istim,:) = mean(meanpsth_across_trials,1);
-end
-normfactor = max(max(meanpsth_across_clusters));
-% meanpsth_across_clusters = meanpsth_across_clusters ./normfactor;
-edges = [0:normfactor/100:normfactor];
-
-stimdur = (metatoes{1}.stims{1}.stim_end_times(1)/fs)-(metatoes{1}.stims{1}.stim_start_times(1)/fs);
-xtime = linspace(-2,8.5,nsamps);
-stim_onset_ind = crossing(xtime);
-stim_offset_ind = crossing(xtime-stimdur);
-
-distributions = [];
-for istim = 1:16
-    n = histc(meanpsth_across_clusters(istim,:),edges);
-    distributions(istim,:) = n ./ size(meanpsth_across_clusters,2);
-end
-figure;
-line(edges,distributions')
-
-title('Site3; all clusters; trial-avg psth; stimulus period')
-%% toedata3 trial #10 distributions
-include_inds = find(sortclass_singleSite);
-% include_inds = find(allsortclass == 3);
-%
-% itrial = 20;
-meanpsth_across_clusters = [];
-for itrial = 1:20
-    for istim = 1:16
-        meanpsth_single_trials = squeeze(toedata_singleSite_psth(include_inds,istim,itrial,stim_onset_ind:stim_offset_ind));
-        meanpsth_across_clusters(istim,itrial,:) = mean(meanpsth_single_trials,1);
-    end
-end
-normfactor = max(max(max(meanpsth_across_clusters)));
-% meanpsth_across_clusters = meanpsth_across_clusters ./normfactor;
-edges = [0:normfactor/100:normfactor];
-
-stimdur = (metatoes{1}.stims{1}.stim_end_times(1)/fs)-(metatoes{1}.stims{1}.stim_start_times(1)/fs);
-xtime = linspace(-2,8.5,nsamps);
-stim_onset_ind = crossing(xtime);
-stim_offset_ind = crossing(xtime-stimdur);
-
-distributions = [];
-for istim = 1:16
-    thisstim_alltrials = squeeze(meanpsth_across_clusters(istim,:,:));
-    n = histc(thisstim_alltrials(:),edges);
-    distributions(istim,:) = n ./ size(thisstim_alltrials(:),1);
-end
-figure;
-line(edges,distributions')
-
-title('Site3; all clusters; average single-trial dist')
 
 %% for all stim, plot psth for all trials in black and trial-averaged psth in red
 include_inds = find(sortclass_singleSite); % for all clusters in toedata3;
