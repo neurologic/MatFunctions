@@ -32,6 +32,12 @@ outfile=[datapath BirdID '/klusta/' klustaID '/' SiteID '/toedata_' SiteID '.mat
 % kwikinfo = h5info(kwikfile);
 
 % Get cluster and time information for each spike
+%%%%%%%%%% KNOWN ISSUE
+%%%%%%%%%% that if have done any merging, there will be
+%%%%%%%%%% clusters without any events assigned to it, with this format,
+%%%%%%%%%% these clsuters are being added to toedeata... if go the other
+%%%%%%%%%% direction of events and then find assigned cluster, would not
+%%%%%%%%%% end up with empty clusters in toedata
 spike_clusters = h5read(kwikfile, '/channel_groups/0/spikes/clusters/main');
 spike_times = h5read(kwikfile, '/channel_groups/0/spikes/time_samples');
 
@@ -68,9 +74,9 @@ stim_codes = h5read(kwikfile, '/event_types/Stimulus/codes');
 stim_text = h5read(kwikfile, '/event_types/Stimulus/text');
 
 stim_start_times = double(digmark_timesamples(digmark_codes == '<'));
-stim_end_times = double(digmark_timesamples(digmark_codes == '>'));
-intertrial_start_times = double(digmark_timesamples(digmark_codes == '('));
-intertrial_end_times = double(digmark_timesamples(digmark_codes == ')'));
+stim_end_times = [double(digmark_timesamples(digmark_codes == '>'))];
+intertrial_start_times = [double(digmark_timesamples(digmark_codes == '('))];
+intertrial_end_times = [double(digmark_timesamples(digmark_codes == ')'))];
 
 if size(stim_text,1)/2 ~= size(stim_start_times,1)
     midnight_hit =1;

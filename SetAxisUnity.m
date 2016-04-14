@@ -2,6 +2,7 @@ function SetAxisUnity(hfig)
 
 figure(hfig)
 axis tight
+axis square
 ylims = get(gca,'YLim');
 xlims = get(gca,'XLim');
 
