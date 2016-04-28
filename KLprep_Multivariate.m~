@@ -1,0 +1,34 @@
+function [m, v] = KLprep_Multivariate(data)
+
+% data is a [ stims x estimates (trials) x dimensions (time samples) ] mat
+
+nstims = size(data,1);
+nestimates = size(data,2);
+ndimensions = size(data,3);
+
+for istim = 1:nstims
+   thisstim = squeeze(data(istim,:,:));
+   thisstim = mean(thisstim,2);
+   m(istim,1) = mean(thisstim);
+   v(istim,1) = var(thisstim);
+end
+
+
+%novel songs
+stimind = 1;
+meanR = []; % ends up as [stim x dimensions(samps)] size
+varR = [] ;% ends up as [stim x dimensions(samps) x dimensions(samps)] size
+for isong = 1:4
+    thissong = squeeze(ResponseSumFiltR_Normal(isong,:,:));
+    for ibin = 1:size(bins,2)-1
+        binresp = thissong(:,bins(ibin):(bins(ibin+1)-1));
+%         meanR(stimind,:) = mean(binresp(:,subsetsamps),1);
+        meanR(stimind,:) = mean(binresp,1);
+
+        x = binresp;
+        [sigma,shrinkage]=covCor(x);
+%         varR(stimind,:,:) = cov(binresp(:,subsetsamps));
+        varR(stimind,:,:) = sigma;
+        stimind = stimind+1;
+    end
+end
