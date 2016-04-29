@@ -16,7 +16,10 @@ assert(max(size(p_mean))==max(size(q_mean)),'p and q have different dimensions')
 % A) p vs q
 kl_pq = [];
 
-a = log(det(q_cov)/det(p_cov));
+% a = log(det(q_cov)/det(p_cov));
+q_eig = eig(q_cov);
+p_eig = eig(p_cov);
+a = sum(log(q_eig))-sum(log(p_eig));
 b = inv(q_cov) * p_cov;
 c = q_mean - p_mean;
 d = inv(q_cov) * c;
@@ -27,7 +30,10 @@ kl_pq = 0.5 * [a + trace(b) + (c' * d) - N];
 % B) q vs p
 kl_qp = [];
 
-a = log(det(p_cov)/det(q_cov));
+% a = log(det(p_cov)/det(q_cov));
+q_eig = eig(q_cov);
+p_eig = eig(p_cov);
+a = sum(log(p_eig))-sum(log(q_eig));
 b = inv(p_cov) * q_cov;
 c = p_mean - q_mean;
 d = inv(p_cov) * c;
