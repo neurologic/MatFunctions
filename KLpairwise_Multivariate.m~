@@ -12,11 +12,6 @@ for istim1 = 1:nstims
         kl_pairwise(istim1,istim2) = kl;
         
     end
-    
-    fileID = fopen('matlog.txt','w');
-    t = datestr(datetime('now'));
-    fprintf(fileID,'%i %s\n',istim1,t);
-    fclose(fileID);
 end
 
 idx = true(nstims);
