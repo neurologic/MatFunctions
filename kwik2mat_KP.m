@@ -155,7 +155,7 @@ for unit_num = 1:length(clusters)
     unit_entry.id = clusters(unit_num);
     unit_entry.sort_class = cluster_classes(unit_num);
     
-    primary_location_prb_microns = clusta_info_mat.prb_location_microns(find(clusta_info_mat.cluster_id == clusters(unit_num)));
+    primary_location_prb_microns = clusta_info_mat.prb_location_microns(find(clusta_info_mat.cluster_id == clusters(unit_num)),:);
     
     unit_entry.primary_location_prb_microns = primary_location_prb_microns;
     unit_entry.fs = fs;
