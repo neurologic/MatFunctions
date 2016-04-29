@@ -1,4 +1,4 @@
-function allSpikes = SpikeMat_filtered(metatoes,type,trial_edges,nsamps)
+function allSpikes = SpikeMat_filtered(toedata,type)
 % type is 'gaussian' or 'synaptic'
 % edges = [trialstart_time,trialend_time] 
 % trialstart_time = -2  because spikes from toedata are relative time to stimulus onset
@@ -6,15 +6,15 @@ function allSpikes = SpikeMat_filtered(metatoes,type,trial_edges,nsamps)
 
 %build psth matrix for a given stimulus on a given trial
 %psth are filtered by gaussian
-allSpikes = cell(size(metatoes,1),size(metatoes{1}.stims,1),size(metatoes{1}.stims{1}.toes,1));
+allSpikes = cell(size(toedata,1),size(toedata{1}.stims,1),size(toedata{1}.stims{1}.toes,1));
 tau = 0.01;
 
 
-for isite = 1:size(metatoes,1)
+for isite = 1:size(toedata,1)
     
-    thissite = metatoes{isite};
+    thissite = toedata{isite};
     
-    for istim = 1:max(size(metatoes{isite}.stims));
+    for istim = 1:max(size(toedata{isite}.stims));
         thisstim = thissite.stims{istim};
         
         for itrial = 1:thisstim.ntrials
