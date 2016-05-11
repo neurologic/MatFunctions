@@ -26,12 +26,12 @@ nsites_I = size(IntracellularData,2);
 
 %% load up extracellular data
 metatoes = load('metatoes.mat');
-
-allsortclass = metatoes.allsortclass;
-allchanz = metatoes.allchanz;
-allsiteID = metatoes.allsiteID;
-
-metatoes = metatoes.metatoes;
+metatoesVars = metatoes;
+vars = fieldnames(metatoes);
+for ifield = 1:size(vars,1)
+    s = [vars{ifield} '= metatoesVars.' vars{ifield} ';'];
+    eval(s)
+end
 
 siteID_E = unique(allsiteID);
 nsites_E = size(siteID_E,2);
@@ -119,7 +119,7 @@ for istim = 1:size(metatoes{1}.stims,1)
             prestim_2 = trial_avg_2(1:stimstart-1);
             peristim_2 = trial_avg_2(stimstart:stimstop);
             
-            cluster_distance(icluster1,icluster2) = abs(allchanz(icluster1) - allchanz(icluster2));
+            cluster_distance(icluster1,icluster2) = abs(allchanxz(icluster1) - allchanxz(icluster2));
 
             c = corrcoef(prestim_1,prestim_2);
             c = c(1,2);
@@ -394,18 +394,18 @@ stairs(log_edges,log_peri_vm,'color','b')
 %dependence of noise correlations on geometric mean between responses of neurons:
 
 %%
-edges = [min(allchanz):50:max(allchanz)];
+edges = [min(allchanxz):50:max(allchanxz)];
 
 %all clusters distribution
-n = histc(allchanz,edges)
+n = histc(allchanxz,edges)
 figure;
-stairs(edges,n/size(allchanz,1),'LineWidth',4);
+stairs(edges,n/size(allchanxz,1),'LineWidth',4);
 title('location distribution all clusters')
 set(gca,'YLim',[0,0.15])
 xlabel('depth in microns')
 
 %good clusters distribution
-n = histc(allchanz(find(allsortclass == 2)),edges);
+n = histc(allchanxz(find(allsortclass == 2)),edges);
 figure;
 stairs(edges,n/size(find(allsortclass == 2),1),'LineWidth',4)
 title('location distribution good clusters')
@@ -413,7 +413,7 @@ set(gca,'YLim',[0,0.15])
 xlabel('depth in microns')
 
 %good clusters distribution
-n = histc(allchanz(find(allsortclass == 1)),edges);
+n = histc(allchanxz(find(allsortclass == 1)),edges);
 figure;
 stairs(edges,n/size(find(allsortclass == 1),1),'LineWidth',4)
 title('location distribution mua clusters')
@@ -421,7 +421,7 @@ set(gca,'YLim',[0,0.15])
 xlabel('depth in microns')
 
 %unsorted clusters distribution
-n = histc(allchanz(find(allsortclass == 3)),edges);
+n = histc(allchanxz(find(allsortclass == 3)),edges);
 figure;
 stairs(edges,n/size(find(allsortclass == 1),1),'LineWidth',4)
 title('location distribution mua clusters')
@@ -444,39 +444,228 @@ end
 maxplot_ht = 200;
 scaled_Spikes = norm_allSpikes.*maxplot_ht;
 
-include_inds = find(allsortclass);
+% include_inds = find(allsortclass);
 
-% include_inds = find(allsortclass == 3);
+include_inds = find(allsortclass == 2);
 
-for istim = 1:size(metatoes{1}.stims,1)
+ntrials = size(allSpikes_SynFilter,3);
+nsamps = size(xtime_spikes,2);
+for istim = 8%:size(metatoes{1}.stims,1)
     figure;
-    set(gcf,'Position',[680 83 449 1015])
+    set(gcf,'Position',[680 83 449 1015],'Visible','off')
     hold on
     
-    xtime = linspace(-2,8.5,nsamps);
+%     xtime = linspace(-2,8.5,nsamps);
     for icluster = 1:size(include_inds,1)
         
-        dcoff = allchanz(include_inds(icluster));
+        dcoff = allchanxz(include_inds(icluster));
         
-        meanpsth = mean(squeeze(scaled_Spikes(include_inds(icluster),istim,:,:))) + dcoff;
+        ClusterFun = squeeze(allSpikes_SynFilter(include_inds(icluster),istim,:));
         
-        line(xtime,meanpsth')
+        ClusterFiltR = zeros(ntrials,nsamps);
+        for itrial = 1:ntrials
+            trialfun = ClusterFun{itrial};
+            if ~isempty(trialfun)
+                ClusterFiltR(itrial,:) = trialfun(xtime_spikes);
+            end
+        end
+        meanpsth = mean(ClusterFiltR,1);
+        meanpsth = ((meanpsth./max(meanpsth))*25) + dcoff;
+        
+        line(xtime_spikes,meanpsth')
         
     end
+    set(gcf,'Visible','on')
+    
+end
     this_clusters_stims = allSpikes(include_inds,istim,:,:);
     trial_avg = nanmean(this_clusters_stims,3);
     cluster_avg = sum(trial_avg,1);
     cluster_avg = cluster_avg ./ max(cluster_avg);
-    line(xtime,((200*squeeze(cluster_avg))+max(allchanz)+100)','LineWidth',1)
+    line(xtime,((200*squeeze(cluster_avg))+max(allchanxz)+100)','LineWidth',1)
     axis tight
     
     fs = 31250;
     stimfs = 40000;
     stimdur = (metatoes{1}.stims{1}.stim_end_times(1)/fs)-(metatoes{1}.stims{1}.stim_start_times(1)/fs);
-    line([0,0],[min(allchanz),max(allchanz)])
-    line([stimdur/6,stimdur/6],[min(allchanz),max(allchanz)])
-    line([stimdur,stimdur],[min(allchanz),max(allchanz)])
+    line([0,0],[min(allchanxz),max(allchanxz)])
+    line([stimdur/6,stimdur/6],[min(allchanxz),max(allchanxz)])
+    line([stimdur,stimdur],[min(allchanxz),max(allchanxz)])
 end
+%%
+do_trialshuffle = 0;
+
+%defaults inds
+sortclassinds = [1:size(allsortclass,2)];
+siteinds = [1:size(allsiteID,2)];
+
+sortclassinds = find(allsortclass == 2);
+siteinds = find(allsiteID == 3);
+include_inds = intersect(sortclassinds,siteinds);
+
+nclusters = size(include_inds,1);
+nstims = size(allSpikes_SynFilter,2);
+ntrials = size(allSpikes_SynFilter,3);
+nsamps = size(xtime_spikes,2);
+
+ResponseSumFiltR = zeros(nstims,ntrials,nsamps);
+
+for istim = 1:size(metatoes{1}.stims,1)
+    
+    TrialFiltR = zeros(nclusters,nsamps);
+    
+%     hfig = figure;
+%     hold on
+       
+    
+    for icluster = 1:size(include_inds,1)
+        trialshuffle(icluster,:) = randperm(ntrials);
+    end
+    
+    FiltFun = squeeze(allSpikes_SynFilter(include_inds,istim,:));
+    for itrial = 1:ntrials
+        
+        for icluster = 1:size(include_inds,1)
+
+            trialind = itrial;
+            if do_trialshuffle ==1
+                trialind = trialshuffle(icluster,itrial);
+            end
+            
+            clusterfun = FiltFun{icluster,trialind};
+            if ~isempty(clusterfun)
+                TrialFiltR(icluster,:) = clusterfun(xtime_spikes); %for this cluster on this trial
+            end
+        end
+        meanpsth(itrial,:) = sum(TrialFiltR,1);
+        
+%         line(xtime_spikes,squeeze(meanpsth(itrial,:))')
+        
+    end
+    
+    ResponseSumFiltR(istim,:,:) = meanpsth;
+    %     set(gcf,'Visible','on')
+%     line(xtime_spikes,squeeze(mean(ResponseSumFiltR(istim,:,:),2)),'color','r','LineWidth',3);
+%     set(gca,'YLim',[0,20]);
+
+end
+
+
+%%
+
+ResidNorm = DataNorm(1,:,:) - repmat(mean(DataNorm(1,:,:),2),1,ntrials,1);
+ResidShuffle = DataShuffle(1,:,:) - repmat(mean(DataShuffle(1,:,:),2),1,ntrials,1);
+
+edges = [0:0.5:20];
+bytrial = squeeze(ResidNorm(1,:,1:sigon));
+skew_pre_norm = skewness(bytrial(:))
+n_pre_norm = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(ResidNorm(1,:,sigon:sigoff));
+skew_stim_norm = skewness(bytrial(:))
+n_stim_norm = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+edges = [0:0.5:20];
+bytrial = squeeze(ResidShuffle(1,:,1:sigon));
+skew_pre_shuffle = skewness(bytrial(:))
+n_pre_shuffle = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(ResidShuffle(1,:,sigon:sigoff));
+skew_stim_shuffle = skewness(bytrial(:))
+n_stim_shuffle = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+figure;hold on
+stairs(edges,n_pre_norm,'color',[0,0,0],'LineWidth',5)
+stairs(edges,n_pre_shuffle,'color',[0.8,0.8,0.8],'LineWidth',3)
+stairs(edges,n_stim_norm,'color',[1,0,0],'LineWidth',5)
+stairs(edges,n_stim_shuffle,'color',[0.5,0,0],'LineWidth',3)
+title('Vm distribution residuals')
+
+%%%%%%%%%%%%
+SignalNorm = mean(DataNorm(1,:,:),2);
+SignalShuffle = mean(DataShuffle(1,:,:),2);
+
+edges = [0:0.5:20];
+bytrial = squeeze(SignalNorm(1,:,1:sigon));
+skew_pre_norm = skewness(bytrial(:))
+n_pre_norm = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(SignalNorm(1,:,sigon:sigoff));
+skew_stim_norm = skewness(bytrial(:))
+n_stim_norm = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+edges = [0:0.5:20];
+bytrial = squeeze(SignalShuffle(1,:,1:sigon));
+skew_pre_shuffle = skewness(bytrial(:))
+n_pre_shuffle = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(SignalShuffle(1,:,sigon:sigoff));
+skew_stim_shuffle = skewness(bytrial(:))
+n_stim_shuffle = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+figure;hold on
+stairs(edges,n_pre_norm,'color',[0,0,0],'LineWidth',5)
+stairs(edges,n_pre_shuffle,'color',[0.8,0.8,0.8],'LineWidth',3)
+stairs(edges,n_stim_norm,'color',[1,0,0],'LineWidth',5)
+stairs(edges,n_stim_shuffle,'color',[0.5,0,0],'LineWidth',3)
+title('Vm distribution signal')
+
+%%%%%%%%%%%
+edges = [0:0.5:20];
+bytrial = squeeze(DataNorm(1,:,1:sigon));
+skew_pre_norm = skewness(bytrial(:))
+n_pre_norm = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(DataNorm(1,:,sigon:sigoff));
+skew_stim_norm = skewness(bytrial(:))
+n_stim_norm = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+edges = [0:0.5:20];
+bytrial = squeeze(DataShuffle(1,:,1:sigon));
+skew_pre_shuffle = skewness(bytrial(:))
+n_pre_shuffle = histc(bytrial(:),edges) / (sigon*ntrials);
+bytrial = squeeze(DataShuffle(1,:,sigon:sigoff));
+skew_stim_shuffle = skewness(bytrial(:))
+n_stim_shuffle = histc(bytrial(:),edges) / ((sigoff-sigon)*ntrials);
+
+figure;hold on
+stairs(edges,n_pre_norm,'color',[0,0,0],'LineWidth',5)
+stairs(edges,n_pre_shuffle,'color',[0.8,0.8,0.8],'LineWidth',3)
+stairs(edges,n_stim_norm,'color',[1,0,0],'LineWidth',5)
+stairs(edges,n_stim_shuffle,'color',[0.5,0,0],'LineWidth',3)
+title('Vm distribution total')
+
+n_pre_shuffle = histc(TrialVarShuffle(1:sigon),edges) / sigon;
+n_stim_shuffle = histc(TrialVarShuffle(sigon:sigoff),edges) / (sigoff-sigon);
+
+TrialVarNorm = var(squeeze(DataNorm(1,:,:)),1);
+TrialVarShuffle = var(squeeze(DataShuffle(1,:,:)),1);
+
+figure;hold on
+line(xtime_spikes,TrialVarNorm','color','k')
+line(xtime_spikes,TrialVarShuffle','color','r')
+
+sigon = min(find(xtime_spikes>0));
+sigoff = max(find(xtime_spikes<6));
+
+edges = [0:1:14];
+n_pre_norm = histc(TrialVarNorm(1:sigon),edges) / sigon;
+n_stim_norm = histc(TrialVarNorm(sigon:sigoff),edges) / (sigoff-sigon);
+
+n_pre_shuffle = histc(TrialVarShuffle(1:sigon),edges) / sigon;
+n_stim_shuffle = histc(TrialVarShuffle(sigon:sigoff),edges) / (sigoff-sigon);
+
+figure;hold on
+stairs(edges, n_pre_norm, 'color','k','LineWidth',5)
+stairs(edges, n_stim_norm, 'color','r','LineWidth',3)
+xlabel('trial var')
+title('norm data; var prestim (black) and during stim (red)')
+
+figure;hold on
+stairs(edges, n_pre_shuffle, 'color','k','LineWidth',5)
+stairs(edges, n_stim_shuffle, 'color','r','LineWidth',3)
+xlabel('trial var')
+title('shuffle data; var prestim (black) and during stim (red)')
+
+figure;hold on
+line(xtime_spikes,(TrialVarNorm./TrialVarShuffle)')
+ylabel('TrialVarNorm./TrialVarShuffle')
+xlabel('sec')
 
 %% for a single trial
 

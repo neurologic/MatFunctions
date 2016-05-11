@@ -16,7 +16,7 @@ nsite_I = size(IntracellularData,2);
 metatoes = load('metatoes.mat');
 
 allsortclass = metatoes.allsortclass;
-allchanz = metatoes.allchanz;
+allchanxz = metatoes.allchanxz;
 allclusterID = metatoes.allclusterid;
 allsiteID = metatoes.allsiteID;
 
@@ -36,7 +36,7 @@ type = 'synaptic';
 trialnsamps = round(diff(trial_edges)*(1/exptdt));
 %  trialnsamps = 10000;
 xtime_spikes = linspace(trial_edges(1),trial_edges(2),trialnsamps);
-allSpikes = SpikeMat_filtered(metatoes,type,trial_edges,trialnsamps);
+allSpikes = SpikeMat_filtered(metatoes,type);
 % allSpikes is a cell array of function handles to pass xtime_spikes to for
 % individual trials to build sub-matrices to analyze
 
