@@ -1,4 +1,8 @@
-function IntracellularData_entry = PopulateIntracellularData(filtexpt,spikethresh)
+function IntracellularData_entry = PopulateIntracellularData(filtexpt,spikethresh,do_medianfilt)
+%default
+if isempty(do_medianfilt)
+    do_medianfilt = 1;
+end
 
 [sigon,sigoff] = GetSigTimes(filtexpt,filtexpt.stimcond,1);
 sigdur = size(filtexpt.stimcond(1).wavs,1)/44100;
@@ -11,7 +15,12 @@ for istim = 1:size(filtexpt.stimcond,2)
     stimexpt = filtesweeps(filtexpt,0,'wavnames',filtexpt.stimcond(istim).wavnames);
     sigdata = stimexpt.wc.data * 1000;
     thisdata = removeSpikes(sigdata,spikethresh,stimexpt.wc.dt);
-    thisdata = thisdata - repmat(median(thisdata(:,1:sigon),2),1,size(thisdata,2));
+    if do_medianfilt==1
+        thisdata = thisdata - repmat(median(thisdata(:,1:sigon),2),1,size(thisdata,2));
+    end
+    if do_medianfilt==0
+        thisdata = thisdata - repmat(mean(median(thisdata(:,1:sigon),2)),size(thisdata,1),size(thisdata,2));
+    end
     cutdata{istim} = thisdata;
     
     prestim{istim} = cutdata{istim}(:,1:sigon);
