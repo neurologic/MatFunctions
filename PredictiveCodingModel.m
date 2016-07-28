@@ -1,7 +1,51 @@
 % Krista Perks
 % modified from http://klab.smpp.northwestern.edu/wiki/images/6/6b/Deneve_spike_coding_CoSMo2015.m
+% http://klab.smpp.northwestern.edu/wiki/images/b/b7/DeneveCoSMo2015.pdf
 % for Boerlin M. et al 2013 PLOS Computational Biology
 
+
+
+%%%%%%%%%%%%
+%ORIGINAL
+%%%%%%%%%%%%
+Gamma=[1,1,1,1,1,-1,-1,-1,-1,-1];
+N=length(Gamma);
+T=10000; Tpstart=2000; Tpend=4000; Tnstart=6000; Tnend=8000; V=zeros(N,T); O=zeros(N,T);
+x=zeros(1,T); xhat=zeros(1,T); lambda=10;
+s=zeros(1,T); s(Tpstart:Tpend)=200; r=zeros(N,T);
+s(Tnstart:Tnend)=-200; 
+epsilon=0.001;
+nu=0.1;
+
+W=Gamma'*Gamma;
+NormG=diag(W)/2+nu/2;
+dt=0.0001;
+
+for t=1:T
+    V(:,t+1)=(1-lambda*dt)*V(:,t)+Gamma'*s(t)*dt - W*O(:,t) + lambda*dt*W*r(:,t); 
+    r(:,t+1)=r(:,t)-lambda*dt*r(:,t)+O(:,t);
+    
+    crit=V(:,t+1)-(NormG+epsilon*randn(N,1));
+    
+    O(:,t+1)=(crit>0);
+    
+    if (sum(O(:,t+1))>1)
+        [u,v]=max(crit);
+        
+        O(:,t+1)=0;
+        O(v,t+1)=1;
+    end
+    x(t+1)=x(t)+s(t)*dt;
+    xhat(t+1)=(1-lambda*dt)*xhat(t)+Gamma*O(:,t);
+end
+
+plot(x','b'); hold on; plot(xhat','r'); plot(-O(2,:)+4,'r'); plot(O(1,:)+4,'g'); plot(O(3,:)+6,'m');plot(-O(4,:)+6,'k');
+plot(O(1,:)+4,'g');
+
+plot(s/5,'g')
+hold off
+
+%%
 % Gamma=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
 N=10; %number of neurons
 g = [0.5:0.01:1]';

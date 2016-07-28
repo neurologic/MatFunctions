@@ -434,8 +434,8 @@ xlabel('depth in microns')
 %% trial-averaged responses by depth (and population avg) for all stims their own figure
 % normalize max cluster response for each cluster to 1
 norm_allSpikes = [];
-for icluster = 1:size(allSpikes,1)
-    thiscluster = allSpikes(icluster,:,:,:);
+for icluster = 1:size(allSpikes_SynFilter,1)
+    thiscluster = allSpikes_SynFilter(icluster,:,:,:);
     norm_scale = max(thiscluster(:));
     thiscluster = thiscluster./norm_scale;
     norm_allSpikes(icluster,:,:,:) = thiscluster;
